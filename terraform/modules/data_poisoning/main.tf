@@ -316,40 +316,40 @@ resource "aws_lambda_permission" "api_gateway_permission" {
   source_arn    = "${aws_api_gateway_rest_api.recommendation_api.execution_arn}/*/*"
 }
 
-resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "sagemaker_recommendation_lifecycle_config" {
-  name = "sagemaker-lifecycle-config-recommendations"
-  on_create = base64encode(templatefile("resources/data_poisoning/lifecycle_config.sh", {
-    s3_bucket_name = aws_s3_bucket.sagemaker_recommendation_bucket.id
-  }))
-  on_start = base64encode(templatefile("resources/data_poisoning/lifecycle_config.sh", {
-    s3_bucket_name = aws_s3_bucket.sagemaker_recommendation_bucket.id
-  }))
-  depends_on = [aws_s3_bucket.sagemaker_recommendation_bucket]
-}
+# resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "sagemaker_recommendation_lifecycle_config" {
+#  name = "sagemaker-lifecycle-config-recommendations"
+# on_create = base64encode(templatefile("resources/data_poisoning/lifecycle_config.sh", {
+#    s3_bucket_name = aws_s3_bucket.sagemaker_recommendation_bucket.id
+#  }))
+#  on_start = base64encode(templatefile("resources/data_poisoning/lifecycle_config.sh", {
+#    s3_bucket_name = aws_s3_bucket.sagemaker_recommendation_bucket.id
+#  }))
+#  depends_on = [aws_s3_bucket.sagemaker_recommendation_bucket]
+# }
 
-resource "aws_security_group" "sagemaker_recommendation_sg" {
-  name        = "sagemaker-recommendation-sg"
-  description = "Security group for SageMaker notebook instance"
-  vpc_id      = var.vpc_id
+# resource "aws_security_group" "sagemaker_recommendation_sg" {
+# name        = "sagemaker-recommendation-sg"
+#  description = "Security group for SageMaker notebook instance"
+#  vpc_id      = var.vpc_id
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+#  egress {
+#    from_port   = 0
+#    to_port     = 0
+#    protocol    = "-1"
+#    cidr_blocks = ["0.0.0.0/0"]
+#  }
+# }
 
 # Fixed: Removed deprecated platform_identifier
-resource "aws_sagemaker_notebook_instance" "recommendation_notebook" {
-  name                         = "recommendation-search-${random_string.suffix.result}"
-  instance_type                = "ml.t2.medium"
-  role_arn                     = aws_iam_role.sagemaker_recommendation_execution_role.arn
-  lifecycle_config_name        = aws_sagemaker_notebook_instance_lifecycle_configuration.sagemaker_recommendation_lifecycle_config.name
-  direct_internet_access       = "Enabled"
-  subnet_id                    = var.subd_public
-  security_groups              = [aws_security_group.sagemaker_recommendation_sg.id]
-}
+# resource "aws_sagemaker_notebook_instance" "recommendation_notebook" {
+#  name                         = "recommendation-search-${random_string.suffix.result}"
+#  instance_type                = "ml.t2.medium"
+#  role_arn                     = aws_iam_role.sagemaker_recommendation_execution_role.arn
+#  lifecycle_config_name        = aws_sagemaker_notebook_instance_lifecycle_configuration.sagemaker_recommendation_lifecycle_config.name
+#  direct_internet_access       = "Enabled"
+#  subnet_id                    = var.subd_public
+#  security_groups              = [aws_security_group.sagemaker_recommendation_sg.id]
+# }
 
 
 resource "aws_iam_role_policy" "retrain_lambda_execution_policy" {
