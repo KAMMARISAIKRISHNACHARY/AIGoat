@@ -32,33 +32,33 @@ resource "aws_iam_role" "sagemaker_execution_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "sagemaker_role_policy_attachment" {
-  role       = aws_iam_role.sagemaker_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
-}
+# resource "aws_iam_role_policy_attachment" "sagemaker_role_policy_attachment" {
+#  role       = aws_iam_role.sagemaker_execution_role.name
+#  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
+# }
 
-resource "aws_iam_role_policy" "sagemaker_bucket_policy" {
-  name = "SageMakerS3Policy"
-  role = aws_iam_role.sagemaker_execution_role.id
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
-        Resource = [
-          aws_s3_bucket.sagemaker_comment_filter_bucket.arn,
-          "${aws_s3_bucket.sagemaker_comment_filter_bucket.arn}/*"
-        ]
-      },
-      {
-        Effect   = "Allow",
-        Action   = "iam:GetRole",
-        Resource = "*"
-      }
-    ]
-  })
-}
+# resource "aws_iam_role_policy" "sagemaker_bucket_policy" {
+#  name = "SageMakerS3Policy"
+#  role = aws_iam_role.sagemaker_execution_role.id
+#  policy = jsonencode({
+#    Version = "2012-10-17",
+#    Statement = [
+ #     {
+  #      Effect   = "Allow",
+   #     Action   = ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
+    #    Resource = [
+     #     aws_s3_bucket.sagemaker_comment_filter_bucket.arn,
+      #    "${aws_s3_bucket.sagemaker_comment_filter_bucket.arn}/*"
+       # ]
+      # },
+      # {
+        # Effect   = "Allow",
+        # Action   = "iam:GetRole",
+        # Resource = "*"
+      # }
+    # ]
+  # })
+# }
 
 # IAM role for Lambda
 resource "aws_iam_role" "lambda_execution_role" {
@@ -180,43 +180,43 @@ resource "aws_lambda_permission" "api_gateway_permission" {
 }
 
 
-resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "sagemaker_lifecycle_config" {
-  name = "sagemaker-lifecycle-config"
-  on_create = base64encode(templatefile("resources/output_integrity/lifecycle_config.sh", {
-    s3_bucket_name = aws_s3_bucket.sagemaker_comment_filter_bucket.id
-  }))
-  on_start = base64encode(templatefile("resources/output_integrity/lifecycle_config.sh", {
-    s3_bucket_name = aws_s3_bucket.sagemaker_comment_filter_bucket.id
-  }))
+# resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "sagemaker_lifecycle_config" {
+ # name = "sagemaker-lifecycle-config"
+  # on_create = base64encode(templatefile("resources/output_integrity/lifecycle_config.sh", {
+    # s3_bucket_name = aws_s3_bucket.sagemaker_comment_filter_bucket.id
+  # }))
+  # on_start = base64encode(templatefile("resources/output_integrity/lifecycle_config.sh", {
+   #  s3_bucket_name = aws_s3_bucket.sagemaker_comment_filter_bucket.id
+ # }))
 
-  depends_on = [aws_s3_bucket.sagemaker_comment_filter_bucket]
-}
-
-
-
-resource "aws_security_group" "sagemaker_sg" {
-  name        = "sagemaker-sg"
-  description = "Security group for SageMaker notebook instance"
-  vpc_id      = var.vpc_id
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+  # depends_on = [aws_s3_bucket.sagemaker_comment_filter_bucket]
+# }
 
 
-resource "aws_sagemaker_notebook_instance" "comments_filter" {
-  name                         = "comments-filter-${random_string.suffix.result}"
-  instance_type                = "ml.t2.medium"
-  role_arn                     = aws_iam_role.sagemaker_execution_role.arn
-  lifecycle_config_name        = aws_sagemaker_notebook_instance_lifecycle_configuration.sagemaker_lifecycle_config.name
-  direct_internet_access       = "Enabled"
-  subnet_id                    = var.subd_public
-  security_groups              = [aws_security_group.sagemaker_sg.id]
-}
+
+# resource "aws_security_group" "sagemaker_sg" {
+  # name        = "sagemaker-sg"
+  # description = "Security group for SageMaker notebook instance"
+  # vpc_id      = var.vpc_id
+
+  # egress {
+    # from_port   = 0
+    # to_port     = 0
+    # protocol    = "-1"
+    # cidr_blocks = ["0.0.0.0/0"]
+  # }
+# }
+
+
+# resource "aws_sagemaker_notebook_instance" "comments_filter" {
+  # name                         = "comments-filter-${random_string.suffix.result}"
+  # instance_type                = "ml.t2.medium"
+  # role_arn                     = aws_iam_role.sagemaker_execution_role.arn
+  # lifecycle_config_name        = aws_sagemaker_notebook_instance_lifecycle_configuration.sagemaker_lifecycle_config.name
+  # direct_internet_access       = "Enabled"
+  # subnet_id                    = var.subd_public
+  # security_groups              = [aws_security_group.sagemaker_sg.id]
+# }
 
 output "api_invoke_url" {
   value = "https://${aws_api_gateway_rest_api.comments_filter_api.id}.execute-api.${var.region}.amazonaws.com/prod/comment"
