@@ -11,26 +11,26 @@ resource "random_string" "suffix" {
   lower   = true
 }
 
-# S3 Bucket for similar images data
+#############################
+# S3 BUCKET
+#############################
+
 resource "aws_s3_bucket" "sagemaker_similar_images_bucket" {
   bucket        = "sagemaker-similar-images-bucket-${random_string.suffix.result}"
   force_destroy = true
 }
 
+# Lambda deployment package
 resource "aws_s3_object" "lambda_deployment_package" {
   bucket = aws_s3_bucket.sagemaker_similar_images_bucket.id
   key    = "lambda/my_deployment_package.zip"
   source = "resources/supply_chain/my_deployment_package.zip"
 }
 
-resource "aws_s3_object" "images" {
-  for_each = fileset("../frontend/public/images/toys/", "**")
-  bucket   = aws_s3_bucket.sagemaker_similar_images_bucket.id
-  key      = "product-pictures/${each.value}"
-  source   = "../frontend/public/images/toys/${each.value}"
-}
+#############################
+# IAM FOR LAMBDA
+#############################
 
-# IAM role for Lambda
 resource "aws_iam_role" "lambda_execution_role" {
   name = "similar-images-api-role-${random_string.suffix.result}"
 
@@ -39,7 +39,9 @@ resource "aws_iam_role" "lambda_execution_role" {
     Statement = [{
       Effect    = "Allow",
       Action    = "sts:AssumeRole",
-      Principal = { Service = "lambda.amazonaws.com" }
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
     }]
   })
 }
@@ -69,7 +71,10 @@ resource "aws_iam_role_policy" "lambda_s3_access" {
   })
 }
 
-# Lambda function
+#############################
+# LAMBDA FUNCTION
+#############################
+
 resource "aws_lambda_function" "similar_images_lambda" {
   s3_bucket        = aws_s3_bucket.sagemaker_similar_images_bucket.id
   s3_key           = aws_s3_object.lambda_deployment_package.key
@@ -82,7 +87,10 @@ resource "aws_lambda_function" "similar_images_lambda" {
   source_code_hash = filebase64sha256("resources/supply_chain/my_deployment_package.zip")
 }
 
-# API Gateway
+#############################
+# API GATEWAY
+#############################
+
 resource "aws_api_gateway_rest_api" "similar_images_api" {
   name        = "similar-images-api"
   description = "API to find similar images"
@@ -128,37 +136,9 @@ resource "aws_lambda_permission" "api_gateway_permission" {
 # SAGEMAKER (DISABLED)
 #############################
 
-# resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "sagemaker_images_lifecycle_config" {
-#   name = "sagemaker-lifecycle-config-similar-images"
-#   on_create = base64encode(templatefile("resources/supply_chain/lifecycle_config.sh", {
-#     s3_bucket_name = aws_s3_bucket.sagemaker_similar_images_bucket.id
-#   }))
-#   on_start = base64encode(templatefile("resources/supply_chain/lifecycle_config.sh", {
-#     s3_bucket_name = aws_s3_bucket.sagemaker_similar_images_bucket.id
-#   }))
-# }
-
-# resource "aws_security_group" "sagemaker_images_sg" {
-#   name        = "sagemaker-images-sg"
-#   description = "Security group for SageMaker notebook instance"
-#   vpc_id      = var.vpc_id
-#
-#   egress {
-#     from_port   = 0
-#     to_port     = 0
-#     protocol    = "-1"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-# }
-
-# resource "aws_sagemaker_notebook_instance" "similar_images_notebook" {
-#   name                  = "similar-images-search-${random_string.suffix.result}"
-#   instance_type         = "ml.t2.medium"
-#   role_arn              = aws_iam_role.lambda_execution_role.arn
-#   direct_internet_access = "Enabled"
-#   subnet_id             = var.subd_public
-#   security_groups       = [aws_security_group.sagemaker_images_sg.id]
-# }
+# resource "aws_sagemaker_notebook_instance_lifecycle_configuration" "sagemaker_images_lifecycle_config" {}
+# resource "aws_security_group" "sagemaker_images_sg" {}
+# resource "aws_sagemaker_notebook_instance" "similar_images_notebook" {}
 
 #############################
 # OUTPUTS
